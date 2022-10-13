@@ -1,0 +1,15 @@
+<package>
+  <description brief="pf_localisation">
+
+     pf_localisation
+
+  </description>
+  <author>jxm1235</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/pf_localisation</url>
+  <depend package="std_msgs"/>
+  <depend package="rospy"/>
+  <depend package="roscpp"/>
+
+</package>
