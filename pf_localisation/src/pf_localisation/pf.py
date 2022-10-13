@@ -8,12 +8,14 @@ from random import random
 
 from time import time
 
-
+print(PoseArray)
 class PFLocaliser(PFLocaliserBase):
        
     def __init__(self):
         # ----- Call the superclass constructor
         super(PFLocaliser, self).__init__()
+        
+        self.n = 100 #Number of particles
         
         # ----- Set motion model parameters
  
@@ -36,8 +38,19 @@ class PFLocaliser(PFLocaliserBase):
             | (geometry_msgs.msg.PoseArray) poses of the particles
         """
         
-        pass
 
+        #self.particlecloud = PoseArray()
+        #pose_array.header.frame_id = "map" ????
+
+        for i in range(self.n):
+            part = Pose()
+            part.position.x = initialpose.position.x + random.gauss(0, 1)*self.ODOM_TRANSLATION_NOISE  # Check what noise should be later
+            part.position.y = initialpose.position.y + random.gauss(0, 1)*self.ODOM_DRIFT_NOISE
+            part.orientation.z = rotateQuaternion(initialpose.pose.orientation, random.gauss(0, 1)*self.ODOM_ROTATION_NOISE)
+            self.particlecloud.append(part)
+
+            #print(self.particle_cloud)
+        return self.particlecloud
  
     
     def update_particle_cloud(self, scan):
@@ -49,7 +62,31 @@ class PFLocaliser(PFLocaliserBase):
             | scan (sensor_msgs.msg.LaserScan): laser scan to use for update
 
          """
-        pass
+        weights = []
+        for part in self.particlecloud:
+            weights.append(self.sensor_model.get_weight(scan, part) + weights[-1])
+
+        new_particlecloud = PoseArray()
+
+        for i in range(math.round(self.n*0.9)):
+            r = random.random() * weights[-1]
+            j = 0
+            while(r >= weights[j]):
+                j+=1
+            
+            part = Pose()
+          
+            part.position.x = self.particlecloud[j].position.x + random.gauss(0, 1)*self.ODOM_TRANSLATION_NOISE  # Check what noise should be later
+            part.position.y = self.particlecloud[j].position.y + random.gauss(0, 1)*self.ODOM_DRIFT_NOISE
+            part.orientation.z = rotateQuaternion(self.particlecloud[j].pose.orientation, random.gauss(0, 1)*self.ODOM_ROTATION_NOISE)
+
+            new_particlecloud.append(self.particlecloud[j])
+
+        #for i in range(math.round(self.n*0.1)):
+            # random particles for kidnapped robot
+        
+        self.particlecloud = new_particlecloud
+        
 
     def estimate_pose(self):
         """
