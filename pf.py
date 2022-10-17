@@ -6,6 +6,7 @@ from numpy import searchsorted
 
 from . util import rotateQuaternion, getHeading
 from random import random
+import random
 
 from time import time
 
@@ -16,7 +17,7 @@ class PFLocaliser(PFLocaliserBase):
         # ----- Call the superclass constructor
         super(PFLocaliser, self).__init__()
         
-        self.n = 10000      # Number of particles
+        self.n = 10     # Number of particles
         
         self.best_pose = Pose()  # robot best pose
 
@@ -25,8 +26,8 @@ class PFLocaliser(PFLocaliserBase):
         self.INIT_ROTATION_NOISE = 1
         self.INIT_TRANSLATION_NOISE = 1
         self.INIT_DRIFT_NOISE = 1
-            #Update step noise
-        self.UPDA_ROTATION_NOISE = 1
+            #Update step noise   #Given in super.
+        self.UPDA_ROTATION_NOISE = 1.0
         self.UPDA_TRANSLATION_NOISE = 1
         self.UPDA_DRIFT_NOISE = 1
         # ----- Sensor model parameters
@@ -54,10 +55,10 @@ class PFLocaliser(PFLocaliserBase):
 
         for i in range(self.n):
             part = Pose()
-            part.position.x = initialpose.position.x + random.gauss(0, 1)*self.INIT_TRANSLATION_NOISE  # Check what noise should be later
-            part.position.y = initialpose.position.y + random.gauss(0, 1)*self.UPDA_DRIFT_NOISE
-            part.orientation.z = rotateQuaternion(initialpose.pose.orientation, random.gauss(0, 1)*self.INIT_ROTATION_NOISE)
-            self.particlecloud.append(part)
+            part.position.x = initialpose.pose.pose.position.x + random.gauss(0, 1)*self.INIT_TRANSLATION_NOISE  # Check what noise should be later
+            part.position.y = initialpose.pose.pose.position.y + random.gauss(0, 1)*self.INIT_DRIFT_NOISE
+            part.orientation = rotateQuaternion(initialpose.pose.pose.orientation, random.gauss(0, 1)*self.INIT_ROTATION_NOISE)
+            self.particlecloud.poses.append(part)
 
             #print(self.particle_cloud)
         return self.particlecloud
@@ -75,26 +76,26 @@ class PFLocaliser(PFLocaliserBase):
         cumul_weights = [0]
         max = (0,0)
         i = 0
-        for part in self.particlecloud:
+        for part in self.particlecloud.poses:
             x = self.sensor_model.get_weight(scan, part)
             cumul_weights.append(x + cumul_weights[-1])
-            if x > max:
+            if x > max[0]:
                 max = (x,i)
             i += 1
 
         new_particlecloud = PoseArray()
 
-        for i in range(math.round(self.n*1)):       # Change for more random particles
+        for i in range(round(self.n*1)):       # Change for more random particles
             r = random.random() * cumul_weights[-1]
             j = searchsorted(cumul_weights, r) - 1            # Binary Search is something to talk about
             
             part = Pose()
 
-            part.position.x = self.particlecloud[j].position.x + random.gauss(0, 1)*self.UPDA_TRANSLATION_NOISE  # Check what noise should be later
-            part.position.y = self.particlecloud[j].position.y + random.gauss(0, 1)*self.UPDA_DRIFT_NOISE
-            part.orientation.z = rotateQuaternion(self.particlecloud[j].pose.orientation, random.gauss(0, 1)*self.UPDA_ROTATION_NOISE)
+            part.position.x = self.particlecloud.poses[j].position.x + random.gauss(0, 1)*self.UPDA_TRANSLATION_NOISE  # Check what noise should be later
+            part.position.y = self.particlecloud.poses[j].position.y + random.gauss(0, 1)*self.UPDA_DRIFT_NOISE
+            part.orientation = rotateQuaternion(self.particlecloud.poses[j].orientation, random.gauss(0, 1)*self.UPDA_ROTATION_NOISE)
 
-            new_particlecloud.append(self.particlecloud[j])
+            new_particlecloud.poses.append(self.particlecloud.poses[j])
 
         #for i in range(math.round(self.n*0.1)):
             # random particles for kidnapped robot
@@ -103,12 +104,12 @@ class PFLocaliser(PFLocaliserBase):
 
         max = (0,0)
         i = 0
-        for part in self.particlecloud:
+        for part in self.particlecloud.poses:
             x = self.sensor_model.get_weight(scan, part)
-            if x > max:
+            if x > max[0]:
                 max = (x,i)
             i += 1
-        self.best_pose = self.particlecloud[i]
+        self.best_pose = self.particlecloud.poses[max[1]]
         
 
     def estimate_pose(self):
