@@ -1,4 +1,3 @@
-from ossaudiodev import SOUND_MIXER_ALTPCM
 from geometry_msgs.msg import Pose, PoseArray, Quaternion
 from . pf_base import PFLocaliserBase
 import math
