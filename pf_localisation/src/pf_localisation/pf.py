@@ -1,10 +1,11 @@
+
 from geometry_msgs.msg import Pose, PoseArray, Quaternion
 from . pf_base import PFLocaliserBase
 import math
 import rospy
 from numpy import searchsorted
 
-from . util import rotateQuaternion, getHeading
+from . util import rotateQuaternion, getHeading, multiply_quaternions
 from random import random
 import random
 
@@ -122,6 +123,33 @@ class PFLocaliser(PFLocaliserBase):
         self.best_pose = self.particlecloud.poses[max[1]]
         
 
+    def avg_pose(self, arr):
+        avgX = 0
+        avgY = 0
+        avgZ = 0
+        avgQ = (0,0,0,0)
+        for part in arr:
+            avgX = part.position.x
+            avgY = part.position.y
+            avgZ = part.position.z
+            avgQ = (part.orientation.getX(),
+                    part.orientation.getY(),
+                    part.orientation.getZ(),
+                    part.orientation.getW())
+            i += 1
+        avgX = avgX / i
+        avgY = avgY / i
+        avgZ = avgZ / i
+        avgQ = (avgQ[0]/i, avgQ[1]/i, avgQ[2]/i, avgQ[3]/i)
+
+        avgPose = Pose()
+        avgPose.x = avgX
+        avgPose.y = avgY
+        avgPose.z = avgZ
+        avgPose.orientation = Quaternion(avgQ[0], avgQ[1], avgQ[2], avgQ[3])
+
+        return avgPose
+
     def estimate_pose(self):
         """
         This should calculate and return an updated robot pose estimate based
@@ -140,39 +168,16 @@ class PFLocaliser(PFLocaliserBase):
          """
         # TODO add clustering
 
+        # clusters = [[self.particlecloud.poses[0]]]
+        # i = 1
+        # for part in self.particlecloud.poses[1:]:
+        #     j = 0
+        #     part.inverseTimes(self.particlecloud.poses[i], self.avg_pose(clusters[j]))
+            
+            
+
 
         # Calculate the average position and heading of particles
-        avgX = 0
-        avgY = 0
-        avgZ = 0
-        avgO = (0,0,0,0)
-        i = 0
-        # Sum all the poses in the particle cloud 
-        # TODO change self.particlecloud to be new clustered particle cloud
-        for part in self.particlecloud.poses:
-            avgX = self.particlecloud.poses[i].position.x
-            avgY = self.particlecloud.poses[i].position.y
-            avgZ = self.particlecloud.poses[i].position.z
-            avgO = (self.particlecloud.poses[i].orientation.getX(),
-                    self.particlecloud.poses[i].orientation.getY(),
-                    self.particlecloud.poses[i].orientation.getZ(),
-                    self.particlecloud.poses[i].orientation.getW())
-            i += 1
-        avgX = avgX / i
-        avgY = avgY / i
-        avgZ = avgZ / i
-        avgO = (avgO[0]/i, avgO[1]/i, avgO[2]/i, avgO[3]/i)
 
-        self.best_pose.position.x = avgX
-        self.best_pose.position.y = avgY
-        self.best_pose.position.z = avgZ
-        self.best_pose.orientation = Quaternion(avgO[0], avgO[1], avgO[2], avgO[3])
-        '''
-        cloud = np.array(self.particlecloud.poses)
-        clustering = DBSCAN(eps = 0.5, min_samples = 2).fit(cloud)
-        labels = clustering.labels_
-        best = 0
-        for i in labels:
-            if 
-        '''
+
         return self.best_pose
