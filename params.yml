@@ -1,0 +1,14 @@
+rosdistro: 'noetic
+
+  '
+roslaunch:
+  uris:
+    host_laptop__40425: http://Laptop:40425/
+rosversion: '1.15.14
+
+  '
+run_id: 83cccad2-4286-11ed-b93f-00155da58b13
+turtlesim:
+  background_b: 255
+  background_g: 86
+  background_r: 150
