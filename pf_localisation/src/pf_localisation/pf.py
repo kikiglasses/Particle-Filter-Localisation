@@ -166,18 +166,26 @@ class PFLocaliser(PFLocaliserBase):
         :Return:
             | (geometry_msgs.msg.Pose) robot's estimated pose.
          """
-        # TODO add clustering
 
-        # clusters = [[self.particlecloud.poses[0]]]
-        # i = 1
-        # for part in self.particlecloud.poses[1:]:
-        #     j = 0
-        #     part.inverseTimes(self.particlecloud.poses[i], self.avg_pose(clusters[j]))
-            
-            
+        # TODO work out threshold
+        DISSIMILARITY_THRESHOLD = 1
 
+        clusters = [[self.particlecloud.poses[0]]]
+        i = 1
+        for part in self.particlecloud.poses[1:]:
+            closestCluster = (1000, clusters[0])
+            for cluster in clusters:
+                diff = part.inverseTimes(self.particlecloud.poses[i], self.avg_pose(cluster))
+                if diff < closestCluster[0] :
+                    closestCluster = (diff, cluster)
+            if (closestCluster[0] > DISSIMILARITY_THRESHOLD):
+                clusters.append([part])
+        
+        best_cluster = clusters[0]
+        for cluster in clusters:
+            if len(cluster) >= len(best_cluster):
+                best_cluster = cluster
 
-        # Calculate the average position and heading of particles
-
+        self.best_pose = self.avg_pose(best_cluster)
 
         return self.best_pose
