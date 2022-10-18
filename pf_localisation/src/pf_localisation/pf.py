@@ -15,14 +15,14 @@ from time import time
 
 PI_OVER_TWO = math.pi/2
 
-print(PoseArray)
+#print(PoseArray)
 class PFLocaliser(PFLocaliserBase):
        
     def __init__(self):
         # ----- Call the superclass constructor
         super(PFLocaliser, self).__init__()
         
-        self.n = 50     # Number of particles
+        self.n = 300     # Number of particles
         
         self.best_pose = Pose()  # robot best pose
 
@@ -30,7 +30,7 @@ class PFLocaliser(PFLocaliserBase):
         '''SOMETHING TO TALK ABOUT'''
 
         # constants used for adaptive MCL
-        self.b = 0.8                    # exponential scaling factor
+        self.b = 0.7                    # exponential scaling factor
         self.b20 = pow(self.b, 20)      # b^20
 
             #Initial placement noise
@@ -78,9 +78,10 @@ class PFLocaliser(PFLocaliserBase):
         return self.particlecloud
  
     def kidnapped_particles(self, max):
+        if max >= 20:
+            return 0
         num = pow(self.b,max) - self.b20
-        num = num/(1 - self.b20)
-        num = num + 10
+        num = 20*num/(1 - self.b20)
         return round(num)
     
     def update_particle_cloud(self, scan):
@@ -100,7 +101,7 @@ class PFLocaliser(PFLocaliserBase):
         for part in self.particlecloud.poses:
             x = self.sensor_model.get_weight(scan, part)
             cumul_weights.append(x + cumul_weights[-1])
-            print(cumul_weights) # for debugging purposes
+            #print(cumul_weights) # for debugging purposes
             if x > max[0]:
                 max = (x,i)
             i += 1
@@ -131,7 +132,7 @@ class PFLocaliser(PFLocaliserBase):
 
             part.position.x = self.particlecloud.poses[j].position.x + random.gauss(0, 10)*self.RAND_TRANSLATION_NOISE      #Takes random particle and adds gaussian noise with large s.d.
             part.position.y = self.particlecloud.poses[j].position.y + random.gauss(0, 10)*self.RAND_DRIFT_NOISE
-            part.orientation.z = math.pi(random.random()*2 - 1)                                                             #Totally random yaw
+            part.orientation.z = math.pi*(random.random()*2 - 1)                                                             #Totally random yaw
 
             new_particlecloud.poses.append(part)
         
@@ -191,7 +192,7 @@ class PFLocaliser(PFLocaliserBase):
         :Return:
             | (geometry_msgs.msg.Pose) robot's estimated pose.
          """
-
+        '''
         # TODO work out threshold
         DISSIMILARITY_THRESHOLD = 1
 
@@ -212,5 +213,5 @@ class PFLocaliser(PFLocaliserBase):
                 best_cluster = cluster
 
         self.best_pose = self.avg_pose(best_cluster)
-
+        '''
         return self.best_pose
