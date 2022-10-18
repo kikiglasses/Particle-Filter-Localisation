@@ -8,9 +8,6 @@ from . util import rotateQuaternion, getHeading
 from random import random
 import random
 
-import numpy as np
-#from sklearn.cluster import DBSCAN
-
 from time import time
 
 PI_OVER_TWO = math.pi/2
@@ -28,8 +25,9 @@ class PFLocaliser(PFLocaliserBase):
 
         # ----- Set motion model parameters
             #Initial placement noise
-        self.INIT_ROTATION_NOISE = PI_OVER_TWO/3
-        self.INIT_TRANSLATION_NOISE = 0.2
+        '''SOMETHING TO TALK ABOUT'''
+        self.INIT_ROTATION_NOISE = PI_OVER_TWO/3            # 99.7% of the time, the robot should be at most 90 degrees off (assumption)
+        self.INIT_TRANSLATION_NOISE = 0.2                   # 
         self.INIT_DRIFT_NOISE = 0.2
             #Update step noise   #Given in super.
         self.UPDA_ROTATION_NOISE = PI_OVER_TWO/3
@@ -78,20 +76,21 @@ class PFLocaliser(PFLocaliserBase):
             | scan (sensor_msgs.msg.LaserScan): laser scan to use for update
 
          """
+        
+        '''SOMETHING TO TALK ABOUT'''
         cumul_weights = [0]
         max = (0,0)
         i = 0
         for part in self.particlecloud.poses:
             x = self.sensor_model.get_weight(scan, part)
             cumul_weights.append(x + cumul_weights[-1])
-            print(cumul_weights) # for debugging purposes
             if x > max[0]:
                 max = (x,i)
             i += 1
 
         new_particlecloud = PoseArray()
 
-        for i in range(self.n):       # Change for more random particles
+        for i in range(round(self.n*1)):       # Change for more random particles
             r = random.random() * cumul_weights[-1]
             j = searchsorted(cumul_weights, r) - 1            # Binary Search is something to talk about
             
@@ -101,13 +100,12 @@ class PFLocaliser(PFLocaliserBase):
             part.position.y = self.particlecloud.poses[j].position.y + random.gauss(0, 1)*self.UPDA_DRIFT_NOISE
             part.orientation = rotateQuaternion(self.particlecloud.poses[j].orientation, random.gauss(0, 1)*self.UPDA_ROTATION_NOISE)
 
-            new_particlecloud.poses.append(part)
+            new_particlecloud.poses.append(self.particlecloud.poses[j])
 
         #for i in range(math.round(self.n*0.1)):
             # random particles for kidnapped robot
         
         self.particlecloud = new_particlecloud
-
 
         max = (0,0)
         i = 0
@@ -135,13 +133,5 @@ class PFLocaliser(PFLocaliserBase):
         :Return:
             | (geometry_msgs.msg.Pose) robot's estimated pose.
          """
-
-        '''
-        cloud = np.array(self.particlecloud.poses)
-        clustering = DBSCAN(eps = 0.5, min_samples = 2).fit(cloud)
-        labels = clustering.labels_
-        best = 0
-        for i in labels:
-            if 
-        '''
+        
         return self.best_pose
