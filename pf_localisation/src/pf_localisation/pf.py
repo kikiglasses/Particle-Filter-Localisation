@@ -1,4 +1,3 @@
-
 from geometry_msgs.msg import Pose, PoseArray, Quaternion
 from . pf_base import PFLocaliserBase
 import math
@@ -29,6 +28,11 @@ class PFLocaliser(PFLocaliserBase):
 
         # ----- Set motion model parameters
         '''SOMETHING TO TALK ABOUT'''
+
+        # constants used for adaptive MCL
+        self.b = 0.8                    # exponential scaling factor 
+        self.b20 = pow(self.b, 20)    # b^20
+
             #Initial placement noise
         self.INIT_ROTATION_NOISE = PI_OVER_TWO/6        # 99.7% of the time, the robot should be at most 90 degrees off (assumption)
         self.INIT_TRANSLATION_NOISE = 0.02              #
@@ -70,6 +74,11 @@ class PFLocaliser(PFLocaliserBase):
             #print(self.particle_cloud)
         return self.particlecloud
  
+    def kidnapped_particles(self, max):
+        num = pow(self.b,max) - self.b20
+        num = num/(1 - self.b20)
+        num = num + 10
+        return num
     
     def update_particle_cloud(self, scan):
         """
@@ -92,10 +101,11 @@ class PFLocaliser(PFLocaliserBase):
             if x > max[0]:
                 max = (x,i)
             i += 1
+        print(max[0])
 
         new_particlecloud = PoseArray()
 
-        for i in range(round(self.n)):       # Change for more random particles
+        for i in range(self.n):       # Change for more random particles
             r = random.random() * cumul_weights[-1]
             j = searchsorted(cumul_weights, r) - 1            # Binary Search is something to talk about
             
@@ -107,7 +117,7 @@ class PFLocaliser(PFLocaliserBase):
 
             new_particlecloud.poses.append(part)
 
-        #for i in range(math.round(self.n*0.1)):
+        for i in range(math.round(kidnapped_particles(self, max[0]))):
             # random particles for kidnapped robot
         
         self.particlecloud = new_particlecloud
