@@ -30,17 +30,20 @@ class PFLocaliser(PFLocaliserBase):
         '''SOMETHING TO TALK ABOUT'''
 
         # constants used for adaptive MCL
-        self.b = 0.8                    # exponential scaling factor 
-        self.b20 = pow(self.b, 20)    # b^20
+        self.b = 0.8                    # exponential scaling factor
+        self.b20 = pow(self.b, 20)      # b^20
 
             #Initial placement noise
-        self.INIT_ROTATION_NOISE = PI_OVER_TWO/6        # 99.7% of the time, the robot should be at most 90 degrees off (assumption)
-        self.INIT_TRANSLATION_NOISE = 0.02              #
-        self.INIT_DRIFT_NOISE = 0.02
+        self.INIT_ROTATION_NOISE = PI_OVER_TWO/3        # TALK ABOUT ASSUMPTIONS
+        self.INIT_TRANSLATION_NOISE = 0.05              # .....
+        self.INIT_DRIFT_NOISE = 0.05                    # .....
             #Update step noise   #Given in super.
-        self.UPDA_ROTATION_NOISE = PI_OVER_TWO/6
-        self.UPDA_TRANSLATION_NOISE = 0.02
-        self.UPDA_DRIFT_NOISE = 0.02
+        self.UPDA_ROTATION_NOISE = PI_OVER_TWO/3
+        self.UPDA_TRANSLATION_NOISE = 0.05
+        self.UPDA_DRIFT_NOISE = 0.05
+            #Kidnapped random noise
+        self.RAND_TRANSLATION_NOISE = 1
+        self.RAND_DRIFT_NOISE = 1
         # ----- Sensor model parameters
         self.NUMBER_PREDICTED_READINGS = 20     # Number of readings to predict
         
@@ -78,7 +81,7 @@ class PFLocaliser(PFLocaliserBase):
         num = pow(self.b,max) - self.b20
         num = num/(1 - self.b20)
         num = num + 10
-        return num
+        return round(num)
     
     def update_particle_cloud(self, scan):
         """
@@ -105,20 +108,32 @@ class PFLocaliser(PFLocaliserBase):
 
         new_particlecloud = PoseArray()
 
+
+            ### resampled particles
         for i in range(self.n):       # Change for more random particles
             r = random.random() * cumul_weights[-1]
             j = searchsorted(cumul_weights, r) - 1            # Binary Search is something to talk about
             
             part = Pose()
 
-            part.position.x = self.particlecloud.poses[j].position.x + random.gauss(0, 1)*self.UPDA_TRANSLATION_NOISE  # Check what noise should be later
+            part.position.x = self.particlecloud.poses[j].position.x + random.gauss(0, 1)*self.UPDA_TRANSLATION_NOISE
             part.position.y = self.particlecloud.poses[j].position.y + random.gauss(0, 1)*self.UPDA_DRIFT_NOISE
             part.orientation = rotateQuaternion(self.particlecloud.poses[j].orientation, random.gauss(0, 1)*self.UPDA_ROTATION_NOISE)
 
             new_particlecloud.poses.append(part)
 
-        for i in range(math.round(kidnapped_particles(self, max[0]))):
-            # random particles for kidnapped robot
+
+
+            ### random particles for kidnapped robot problem
+        for i in range(self.kidnapped_particles(max[0])):
+            j = random.randint(0, self.n)
+            part = Pose()
+
+            part.position.x = self.particlecloud.poses[j].position.x + random.gauss(0, 10)*self.RAND_TRANSLATION_NOISE      #Takes random particle and adds gaussian noise with large s.d.
+            part.position.y = self.particlecloud.poses[j].position.y + random.gauss(0, 10)*self.RAND_DRIFT_NOISE
+            part.orientation.z = math.pi(random.random()*2 - 1)                                                             #Totally random yaw
+
+            new_particlecloud.poses.append(part)
         
         self.particlecloud = new_particlecloud
 
