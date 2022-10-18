@@ -27,14 +27,15 @@ class PFLocaliser(PFLocaliserBase):
         self.best_pose = Pose()  # robot best pose
 
         # ----- Set motion model parameters
+        '''SOMETHING TO TALK ABOUT'''
             #Initial placement noise
-        self.INIT_ROTATION_NOISE = PI_OVER_TWO/3
-        self.INIT_TRANSLATION_NOISE = 0.2
-        self.INIT_DRIFT_NOISE = 0.2
+        self.INIT_ROTATION_NOISE = PI_OVER_TWO/6        # 99.7% of the time, the robot should be at most 90 degrees off (assumption)
+        self.INIT_TRANSLATION_NOISE = 0.02              #
+        self.INIT_DRIFT_NOISE = 0.02
             #Update step noise   #Given in super.
-        self.UPDA_ROTATION_NOISE = PI_OVER_TWO/3
-        self.UPDA_TRANSLATION_NOISE = 0.2
-        self.UPDA_DRIFT_NOISE = 0.2
+        self.UPDA_ROTATION_NOISE = PI_OVER_TWO/6
+        self.UPDA_TRANSLATION_NOISE = 0.02
+        self.UPDA_DRIFT_NOISE = 0.02
         # ----- Sensor model parameters
         self.NUMBER_PREDICTED_READINGS = 20     # Number of readings to predict
         
@@ -78,6 +79,8 @@ class PFLocaliser(PFLocaliserBase):
             | scan (sensor_msgs.msg.LaserScan): laser scan to use for update
 
          """
+       
+        '''SOMETHING TO TALK ABOUT'''
         cumul_weights = [0]
         max = (0,0)
         i = 0
@@ -91,7 +94,7 @@ class PFLocaliser(PFLocaliserBase):
 
         new_particlecloud = PoseArray()
 
-        for i in range(self.n):       # Change for more random particles
+        for i in range(round(self.n)):       # Change for more random particles
             r = random.random() * cumul_weights[-1]
             j = searchsorted(cumul_weights, r) - 1            # Binary Search is something to talk about
             
