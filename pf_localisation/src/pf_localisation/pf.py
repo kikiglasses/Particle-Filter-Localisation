@@ -176,6 +176,15 @@ class PFLocaliser(PFLocaliserBase):
 
         return avgPose
 
+    def diff (pose1, pose2):
+        posDiff = math.sqrt((pose1.position.x - pose2.position.x) ** 2 + (pose1.position.y - pose2.position.y) ** 2)
+        angleDiff = getHeading(pose1.orientation) - getHeading(pose2.orientation)
+        if angleDiff > math.pi: 
+            angleDiff = 2 * math.pi - angleDiff
+        # r is ratio that angle has effect on diff
+        r = 1/math.pi
+        return posDiff + r * angleDiff
+
     def estimate_pose(self):
         """
         This should calculate and return an updated robot pose estimate based
@@ -192,20 +201,22 @@ class PFLocaliser(PFLocaliserBase):
         :Return:
             | (geometry_msgs.msg.Pose) robot's estimated pose.
          """
-        '''
+
         # TODO work out threshold
         DISSIMILARITY_THRESHOLD = 1
 
+        #Basic Sequential Algorithmic Scheme
         clusters = [[self.particlecloud.poses[0]]]
-        i = 1
         for part in self.particlecloud.poses[1:]:
             closestCluster = (1000, clusters[0])
             for cluster in clusters:
-                diff = part.inverseTimes(self.particlecloud.poses[i], self.avg_pose(cluster))
+                diff = diff(part, self.avg_pose(cluster))
                 if diff < closestCluster[0] :
                     closestCluster = (diff, cluster)
             if (closestCluster[0] > DISSIMILARITY_THRESHOLD):
                 clusters.append([part])
+            else: 
+                closestCluster[1].append(part)
         
         best_cluster = clusters[0]
         for cluster in clusters:
@@ -213,5 +224,5 @@ class PFLocaliser(PFLocaliserBase):
                 best_cluster = cluster
 
         self.best_pose = self.avg_pose(best_cluster)
-        '''
+
         return self.best_pose
