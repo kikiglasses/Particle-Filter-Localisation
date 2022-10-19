@@ -30,7 +30,7 @@ class PFLocaliser(PFLocaliserBase):
         '''SOMETHING TO TALK ABOUT'''
 
         # constants used for adaptive MCL
-        self.b = 0.7                    # exponential scaling factor
+        self.b = 0.9                    # exponential scaling factor
         self.b20 = pow(self.b, 20)      # b^20
 
             #Initial placement noise
@@ -127,7 +127,7 @@ class PFLocaliser(PFLocaliserBase):
 
             ### random particles for kidnapped robot problem
         for i in range(self.kidnapped_particles(max[0])):
-            j = random.randint(0, self.n)
+            j = random.randint(0, self.n-1)
             part = Pose()
 
             part.position.x = self.particlecloud.poses[j].position.x + random.gauss(0, 10)*self.RAND_TRANSLATION_NOISE      #Takes random particle and adds gaussian noise with large s.d.
