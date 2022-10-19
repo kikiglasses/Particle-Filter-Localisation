@@ -1,2 +1,6 @@
 .vscode/c_cpp_properties.json
 .vscode/settings.json
+pf_localisation/src/pf_localisation/__pycache__/util.cpython-38.pyc
+pf_localisation/src/pf_localisation/__pycache__/pf.cpython-38.pyc
+pf_localisation/src/pf_localisation/__pycache__/sensor_model.cpython-38.pyc
+pf_localisation/src/pf_localisation/__pycache__/pf_base.cpython-38.pyc
