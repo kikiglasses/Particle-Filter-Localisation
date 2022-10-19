@@ -170,9 +170,9 @@ class PFLocaliser(PFLocaliserBase):
         avgQ = (avgQ[0]/i, avgQ[1]/i, avgQ[2]/i, avgQ[3]/i)
 
         avgPose = Pose()
-        avgPose.x = avgX
-        avgPose.y = avgY
-        avgPose.z = avgZ
+        avgPose.position.x = avgX
+        avgPose.position.y = avgY
+        avgPose.position.z = avgZ
         avgPose.orientation = Quaternion(avgQ[0], avgQ[1], avgQ[2], avgQ[3])
 
         return avgPose
