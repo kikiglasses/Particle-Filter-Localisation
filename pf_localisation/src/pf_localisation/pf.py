@@ -154,14 +154,15 @@ class PFLocaliser(PFLocaliserBase):
         avgY = 0
         avgZ = 0
         avgQ = (0,0,0,0)
+        i = 0
         for part in arr:
             avgX = part.position.x
             avgY = part.position.y
             avgZ = part.position.z
-            avgQ = (part.orientation.getX(),
-                    part.orientation.getY(),
-                    part.orientation.getZ(),
-                    part.orientation.getW())
+            avgQ = (part.orientation.x,
+                    part.orientation.y,
+                    part.orientation.z,
+                    part.orientation.w)
             i += 1
         avgX = avgX / i
         avgY = avgY / i
@@ -176,7 +177,7 @@ class PFLocaliser(PFLocaliserBase):
 
         return avgPose
 
-    def diff (pose1, pose2):
+    def diff (self, pose1, pose2):
         posDiff = math.sqrt((pose1.position.x - pose2.position.x) ** 2 + (pose1.position.y - pose2.position.y) ** 2)
         angleDiff = getHeading(pose1.orientation) - getHeading(pose2.orientation)
         if angleDiff > math.pi: 
@@ -210,7 +211,7 @@ class PFLocaliser(PFLocaliserBase):
         for part in self.particlecloud.poses[1:]:
             closestCluster = (1000, clusters[0])
             for cluster in clusters:
-                diff = diff(part, self.avg_pose(cluster))
+                diff = self.diff(part, self.avg_pose(cluster))
                 if diff < closestCluster[0] :
                     closestCluster = (diff, cluster)
             if (closestCluster[0] > DISSIMILARITY_THRESHOLD):
