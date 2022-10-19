@@ -34,8 +34,8 @@ class PFLocaliser(PFLocaliserBase):
 
             #Initial placement noise
         self.INIT_ROTATION_NOISE = PI_OVER_TWO/6        # TALK ABOUT ASSUMPTIONS
-        self.INIT_TRANSLATION_NOISE = 0.05              # .....
-        self.INIT_DRIFT_NOISE = 0.05                    # .....
+        self.INIT_TRANSLATION_NOISE = 0.1              # .....
+        self.INIT_DRIFT_NOISE = 0.1                    # .....
             #Update step noise   #Given in super.
         self.UPDA_ROTATION_NOISE = PI_OVER_TWO/12
         self.UPDA_TRANSLATION_NOISE = 0.05
@@ -119,7 +119,7 @@ class PFLocaliser(PFLocaliserBase):
             new_particlecloud.poses.append(part)
 
 
-
+        
             ### random particles for kidnapped robot problem
         for i in range(self.kidnapped_particles(max[0])):
             j = random.randint(0, self.n-1)
@@ -222,5 +222,5 @@ class PFLocaliser(PFLocaliserBase):
                 best_cluster = cluster
 
         self.best_pose = self.avg_pose(best_cluster)
-        print(round(self.best_pose.position.x, 4), "\n", round(self.best_pose.position.y, 4), "\n", round(getHeading(self.best_pose)*180/math.pi, 4))
+        print(round(self.best_pose.position.x, 4), "\n", round(self.best_pose.position.y, 4), "\n", round(getHeading(self.best_pose.orientation)*180/math.pi, 4))
         return self.best_pose
