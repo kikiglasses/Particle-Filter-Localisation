@@ -15,7 +15,6 @@ from time import time
 
 PI_OVER_TWO = math.pi/2
 
-#print(PoseArray)
 class PFLocaliser(PFLocaliserBase):
        
     def __init__(self):
@@ -34,16 +33,16 @@ class PFLocaliser(PFLocaliserBase):
         self.b20 = pow(self.b, 20)      # b^20
 
             #Initial placement noise
-        self.INIT_ROTATION_NOISE = PI_OVER_TWO/3        # TALK ABOUT ASSUMPTIONS
+        self.INIT_ROTATION_NOISE = PI_OVER_TWO/6        # TALK ABOUT ASSUMPTIONS
         self.INIT_TRANSLATION_NOISE = 0.05              # .....
         self.INIT_DRIFT_NOISE = 0.05                    # .....
             #Update step noise   #Given in super.
-        self.UPDA_ROTATION_NOISE = PI_OVER_TWO/3
+        self.UPDA_ROTATION_NOISE = PI_OVER_TWO/12
         self.UPDA_TRANSLATION_NOISE = 0.05
         self.UPDA_DRIFT_NOISE = 0.05
             #Kidnapped random noise
-        self.RAND_TRANSLATION_NOISE = 1
-        self.RAND_DRIFT_NOISE = 1
+        self.RAND_TRANSLATION_NOISE = 10
+        self.RAND_DRIFT_NOISE = 10
         # ----- Sensor model parameters
         self.NUMBER_PREDICTED_READINGS = 20     # Number of readings to predict
         
@@ -69,12 +68,10 @@ class PFLocaliser(PFLocaliserBase):
 
         for i in range(self.n):
             part = Pose()
-            part.position.x = initialpose.pose.pose.position.x + random.gauss(0, 1)*self.INIT_TRANSLATION_NOISE  # Check what noise should be later
-            part.position.y = initialpose.pose.pose.position.y + random.gauss(0, 1)*self.INIT_DRIFT_NOISE
-            part.orientation = rotateQuaternion(initialpose.pose.pose.orientation, random.gauss(0, 1)*self.INIT_ROTATION_NOISE)
+            part.position.x = initialpose.pose.pose.position.x + random.gauss(0, self.INIT_TRANSLATION_NOISE)  # Check what noise should be later
+            part.position.y = initialpose.pose.pose.position.y + random.gauss(0, self.INIT_DRIFT_NOISE)
+            part.orientation = rotateQuaternion(initialpose.pose.pose.orientation, random.gauss(0, self.INIT_ROTATION_NOISE))
             self.particlecloud.poses.append(part)
-
-            #print(self.particle_cloud)
         return self.particlecloud
  
     def kidnapped_particles(self, max):
@@ -101,11 +98,9 @@ class PFLocaliser(PFLocaliserBase):
         for part in self.particlecloud.poses:
             x = self.sensor_model.get_weight(scan, part)
             cumul_weights.append(x + cumul_weights[-1])
-            #print(cumul_weights) # for debugging purposes
             if x > max[0]:
                 max = (x,i)
             i += 1
-        print(max[0])
 
         new_particlecloud = PoseArray()
 
@@ -117,9 +112,9 @@ class PFLocaliser(PFLocaliserBase):
             
             part = Pose()
 
-            part.position.x = self.particlecloud.poses[j].position.x + random.gauss(0, 1)*self.UPDA_TRANSLATION_NOISE
-            part.position.y = self.particlecloud.poses[j].position.y + random.gauss(0, 1)*self.UPDA_DRIFT_NOISE
-            part.orientation = rotateQuaternion(self.particlecloud.poses[j].orientation, random.gauss(0, 1)*self.UPDA_ROTATION_NOISE)
+            part.position.x = self.particlecloud.poses[j].position.x + random.gauss(0, self.UPDA_TRANSLATION_NOISE)
+            part.position.y = self.particlecloud.poses[j].position.y + random.gauss(0, self.UPDA_DRIFT_NOISE)
+            part.orientation = rotateQuaternion(self.particlecloud.poses[j].orientation, random.gauss(0, self.UPDA_ROTATION_NOISE))
 
             new_particlecloud.poses.append(part)
 
@@ -130,8 +125,8 @@ class PFLocaliser(PFLocaliserBase):
             j = random.randint(0, self.n-1)
             part = Pose()
 
-            part.position.x = self.particlecloud.poses[j].position.x + random.gauss(0, 10)*self.RAND_TRANSLATION_NOISE      #Takes random particle and adds gaussian noise with large s.d.
-            part.position.y = self.particlecloud.poses[j].position.y + random.gauss(0, 10)*self.RAND_DRIFT_NOISE
+            part.position.x = self.particlecloud.poses[j].position.x + random.gauss(0, self.RAND_TRANSLATION_NOISE)      #Takes random particle and adds gaussian noise with large s.d.
+            part.position.y = self.particlecloud.poses[j].position.y + random.gauss(0, self.RAND_DRIFT_NOISE)
             part.orientation.z = math.pi*(random.random()*2 - 1)                                                             #Totally random yaw
 
             new_particlecloud.poses.append(part)
@@ -156,10 +151,10 @@ class PFLocaliser(PFLocaliserBase):
         avgQ = (0,0,0,0)
         i = 0
         for part in arr:
-            avgX = part.position.x
-            avgY = part.position.y
-            avgZ = part.position.z
-            avgQ = (part.orientation.x,
+            avgX += part.position.x             #fixed these, wasn't summing
+            avgY += part.position.y
+            avgZ += part.position.z
+            avgQ = (part.orientation.x,         #TODO not fixed, needs to sum not reset each cycle
                     part.orientation.y,
                     part.orientation.z,
                     part.orientation.w)
@@ -178,13 +173,15 @@ class PFLocaliser(PFLocaliserBase):
         return avgPose
 
     def diff (self, pose1, pose2):
-        posDiff = math.sqrt((pose1.position.x - pose2.position.x) ** 2 + (pose1.position.y - pose2.position.y) ** 2)
-        angleDiff = getHeading(pose1.orientation) - getHeading(pose2.orientation)
-        if angleDiff > math.pi: 
+        xDiff = pose1.position.x - pose2.position.x
+        yDiff = pose1.position.y - pose2.position.y
+        angleDiff = abs(getHeading(pose1.orientation) - getHeading(pose2.orientation))
+        if angleDiff > math.pi:
             angleDiff = 2 * math.pi - angleDiff
         # r is ratio that angle has effect on diff
-        r = 1/math.pi
-        return posDiff + r * angleDiff
+        r = 1/self.UPDA_ROTATION_NOISE
+        posDiff = math.sqrt( xDiff**2 + yDiff**2 + (r*angleDiff)**2)
+        return posDiff
 
     def estimate_pose(self):
         """
@@ -204,7 +201,7 @@ class PFLocaliser(PFLocaliserBase):
          """
 
         # TODO work out threshold
-        DISSIMILARITY_THRESHOLD = 1
+        DISSIMILARITY_THRESHOLD = 1.5
 
         #Basic Sequential Algorithmic Scheme
         clusters = [[self.particlecloud.poses[0]]]
@@ -225,5 +222,5 @@ class PFLocaliser(PFLocaliserBase):
                 best_cluster = cluster
 
         self.best_pose = self.avg_pose(best_cluster)
-
+        print(round(self.best_pose.position.x, 4), "\n", round(self.best_pose.position.y, 4), "\n", round(getHeading(self.best_pose)*180/math.pi, 4))
         return self.best_pose
