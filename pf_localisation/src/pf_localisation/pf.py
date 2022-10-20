@@ -21,7 +21,7 @@ class PFLocaliser(PFLocaliserBase):
         # ----- Call the superclass constructor
         super(PFLocaliser, self).__init__()
         
-        self.n = 300     # Number of particles
+        self.n = 100     # Number of particles
         
         self.best_pose = Pose()  # robot best pose
 
@@ -148,21 +148,29 @@ class PFLocaliser(PFLocaliserBase):
         avgX = 0
         avgY = 0
         avgZ = 0
-        avgQ = (0,0,0,0)
+        avgQx = 0
+        avgQy = 0
+        #avgQ = (0,0,0,0)
         i = 0
         for part in arr:
             avgX += part.position.x             #fixed these, wasn't summing
             avgY += part.position.y
             avgZ += part.position.z
+            '''
+            avgQx += math.cos(getHeading(part.orientation))
+            avgQy += math.sin(getHeading(part.orientation))
+            '''
             avgQ = (part.orientation.x,         #TODO not fixed, needs to sum not reset each cycle
                     part.orientation.y,
                     part.orientation.z,
                     part.orientation.w)
+            
             i += 1
         avgX = avgX / i
         avgY = avgY / i
         avgZ = avgZ / i
-        avgQ = (avgQ[0]/i, avgQ[1]/i, avgQ[2]/i, avgQ[3]/i)
+        #avgQ = (0,0,math.atan2(avgQy,avgQx), 0)
+        #avgQ = (avgQ[0]/i, avgQ[1]/i, avgQ[2]/i, avgQ[3]/i)
 
         avgPose = Pose()
         avgPose.position.x = avgX
@@ -222,5 +230,5 @@ class PFLocaliser(PFLocaliserBase):
                 best_cluster = cluster
 
         self.best_pose = self.avg_pose(best_cluster)
-        #print(round(self.best_pose.position.x, 4), "\n", round(self.best_pose.position.y, 4), "\n", round(getHeading(self.best_pose.orientation)*180/math.pi, 4))
+        print(round(self.best_pose.position.x, 4), "\n", round(self.best_pose.position.y, 4), "\n", round(getHeading(self.best_pose.orientation)*180/math.pi, 4))
         return self.best_pose
