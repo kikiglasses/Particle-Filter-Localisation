@@ -1,3 +1,3 @@
 # Particle Filter Localisation in ROSpy
-Intelligent Robotics Module @University of Birmingham
+Intelligent Robotics Module Group Project @University of Birmingham
 
